@@ -1,0 +1,192 @@
+/*
+ * This class implements a Binary Search Tree(BST) whose nodes hold objects that 
+ * implement the Comparable interface.
+ */
+class BinarySearchTree{
+	/*
+	 * Node节点是构成很多数据结构的基本组成，因此多以inner class形式声明于某种数据结构内部
+	 * A node of a tree stores a data item and references to the left and right child nodes
+	 */
+	class Node{
+		public Node left;   // left child node
+		public Node right;  // right child node
+		public Integer data;    // 注意Nodes hold objects that implements the Comparable interface
+			
+		public Node(){      // 显示constructor初始化, constructs an empty tree
+			left = null;
+			right = null;
+			data = 0;
+		}
+		/*
+		 * 当我们对BST进行插入node操作时，BST数据结构对外肯定会有一个public interface add(Node newNode)操作。
+		 * 但内部真正node插入时，可以更进一步到是某个Node实现的插入addNode(newNode)操作，这样插入了其left or right child.
+		 * 因此，我们需要针对Node class定义一个addNode()方法。
+		 * 
+		 * 根据笔记中所述，BST的插入操作实际上是从root到leaf, 先进行了多次的比较操作，最后找到了插入点才new Node并完成object reference.
+		 * 因此我们可以通过Node中object的compareTo()方法进行data value的比较，又因为当前Node的left child和right child都是下一级Node
+		 * 可以不断递归recursion调用child node的addTo方法，确定最终插入的位置。
+		 */
+		/* Compares this object with the specified object for order.
+		 * Returns a negative integer, zero, or a positive integer
+		 * as this object is less than, equal to, or greater than the specified object.
+		 * 
+		 * A.compareTo(B) < 0       <===>          A < B
+		 * A.compareTo(B) = 0       <===>          A = B
+		 * A.compareTo(B) > 0       <===>          A > B
+		*/
+		public void addNode(Node newNode){
+			
+			int result = newNode.data.compareTo(data);
+			if( result<0 ){
+				if(left==null) 
+					left = newNode;
+				else
+					left.addNode(newNode);
+			}else if( result>0 ){
+				if(right==null) 
+					right = newNode;
+				else
+					right.addNode(newNode);
+			}
+			/*
+			 * 如果插入的Node的data value和当前所处的Node的data value相同，则不用处理
+			 */
+		}
+	}
+
+	/* 
+	 *    注意很多数据结构内部都是由节点Node构成，比如LinkedList, Tree等
+	 *    因此对于这些数据结构一般都会有个成员变量instance variable作为
+	 *    初始 first Node, 或者根root node	 
+	 */
+	Node root;   // Root Node object reference
+	
+	public BinarySearchTree(){
+		root = null;
+	}
+
+	/*
+	 * BST对外的插入操作public interface
+	 */
+	 public void add(int dataVal){
+		 Node newNode = new Node();
+		 newNode.left = null;
+		 newNode.right = null;
+		 newNode.data = dataVal;
+		 if( root==null )           // 第一次插入的是root node
+			 root = newNode;
+		 else
+			 root.addNode(newNode);  // 之后插入都先从root到leaf找到在哪儿插入的位置, 最后通过Node的addNode方法插入新Node
+		 							 //  这是一个recursion的过程
+	 }
+	 
+	 
+	 /*
+	  * BST对外的删除操作public interface
+	  * Remove node的操作略麻烦
+	  * 1. 删除一个Node首先要先找到删除的Node在哪儿，如果tree中不包含要删除Node，则不做任何处理
+	  * 2. 
+	  */
+	 
+	 public void remove(int dataVal){
+		 
+		 boolean found = false;  // 用于标记是否找到要删除的Node
+		 Node toRemoved = root;  // 寻找的时候从root node开始往下找,先用变量暂存访问的node, 后面再更新
+		 Node parent = null;     // 这个Node用于存要删除Node的父节点, 因为之后找到要被删除的Node后，需要对其parent node操作
+		 
+		 if(toRemoved==null)
+			 return;
+		 else{
+			 /*
+			  * 从root node开始往下寻找，要remove的Node在哪儿
+			  * 当找到时，寻找过程可以结束 or 找到最后发现不存在要remove的Node, 因此循环受两个条件控制
+			  */
+			 while( !found && toRemoved!=null ){	 
+				 int result = toRemoved.data.compareTo(dataVal);
+				 if(result<0){
+					 parent = toRemoved;
+					 toRemoved = toRemoved.right;
+				 }else if(result>0){
+					 parent = toRemoved;
+					 toRemoved = toRemoved.left;
+				 }else{
+					 
+					 found = true;
+				 }
+			 }
+			 
+			 if(found==false)
+				 return;     // 从root寻找到leaf，未找到要删除的Node
+			 else{
+				 /*
+				  * 下面的操作是确定已经找到了要删除的Node, 但仍然如doc中所述分多种情况
+				  * 下面的处理时统一处理了1 和 2两种情况，即被删除Node没有child nodes和被删除Node有一个child node的
+				  * 情况。
+				  */
+				 
+				 if(toRemoved.left==null || toRemoved.right==null ){
+					 Node newChild = null;
+					 if(toRemoved.left==null)
+						 newChild = toRemoved.right;
+					 else if(toRemoved.right==null)
+						 newChild = toRemoved.left;
+					 
+					 if(parent==null)
+						 root = newChild;
+					 else if(parent.left==toRemoved)
+						 parent.left = newChild;
+					 else if(parent.right==toRemoved)
+						 parent.right = newChild;
+					 
+					 return;
+				 }
+				 
+				 /*
+				  * 接下来处理比较麻烦的情况就是，被删除Node的左右child nodes都存在，即doc中第3种情况
+				  * 此时我们需要找到被删除Node的right subtree中的smallest element,然后将其value拷贝到被删除Node的value
+				  * 同时拷贝完后，这个Node会无效，我们还需要对其父节点即smallest parent node处理
+				  */
+				 Node smallestParent = toRemoved;
+				 Node smallest = toRemoved.right;
+				 
+				 // Find smallest element of the right subtree
+				 while(smallest.left!=null){
+					 smallestParent = smallest;
+					 smallest = smallest.left;
+				 }
+				 toRemoved.data = smallest.data;
+				 
+				 if(smallestParent==toRemoved)            // 画图理解这两种情况！！
+					 smallestParent.right = smallest.right;
+				 else
+					 smallestParent.left = smallest.right;
+			 }
+		 }
+	 }
+	 /*
+	  * Prints the contents of the tree in sorted order
+	  */
+	 public void print(){
+		 print(root);
+		 System.out.println();
+	 }
+	 /*
+	  * Prints a node and all of its descendants in sorted order
+	  * Parameter parent is the root of the subtree to print
+	  */
+	 private static void print(Node parent){
+		 
+		 if(parent == null) return;
+		 print(parent.left);
+		 System.out.println(parent.data + " ");
+		 print(parent.right);
+	 }
+}
+
+
+
+public class BinarySearchTreeSolution {
+
+	public static void main(String[] args) {
+	}
+}
